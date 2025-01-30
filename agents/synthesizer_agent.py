@@ -4,7 +4,7 @@ from typing import Dict, Any
 from utils.logger import setup_logger
 from pydantic import BaseModel
 from .base import BaseAgent
-from .models import LLMAnswer
+from ..schemas.models import LLMAnswer
 from langchain_core.messages import SystemMessage, HumanMessage
 
 logger = setup_logger()

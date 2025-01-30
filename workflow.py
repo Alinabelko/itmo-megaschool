@@ -1,6 +1,6 @@
 from typing import Dict, Any, Annotated
 from langgraph.graph import StateGraph, END
-from agents.models import AgentState, LLMAnswer
+from schemas.models import AgentState, LLMAnswer
 from agents.synthesizer_agent import SynthesizerAgent
 
 def create_workflow(synthesizer_agent: SynthesizerAgent) -> StateGraph:

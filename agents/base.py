@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from abc import ABC, abstractmethod
-from .models import LLMAnswer
+from ..schemas.models import LLMAnswer
 
 class AgentState(BaseModel):
     messages: List[Dict[str, str]]
