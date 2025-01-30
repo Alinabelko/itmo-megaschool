@@ -1,34 +1,28 @@
-import sys
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
-from aiologger import Logger
-from aiologger.formatters.base import Formatter
-from aiologger.handlers.files import AsyncFileHandler
-from aiologger.handlers.streams import AsyncStreamHandler
-from aiologger.levels import LogLevel
+def setup_logger():
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
 
+    logger = logging.getLogger('app_logger')
+    logger.setLevel(logging.INFO)
 
-async def setup_logger():
-    # Create logger instance
-    logger = Logger(name="api_logger")
-
-    # Create formatter
-    formatter = Formatter(
-        fmt="{asctime} | {levelname} | {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        style="{",
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-    file_handler = AsyncFileHandler(
-        filename="logs/api.log",
-        mode="a",
-        encoding="utf-8",
+    file_handler = RotatingFileHandler(
+        'logs/app.log',
+        maxBytes=10485760, 
+        backupCount=5
     )
-    stream_handler = AsyncStreamHandler(stream=sys.stdout)
-    file_handler.formatter = formatter
-    stream_handler.formatter = formatter
-    logger.add_handler(file_handler)
-    logger.add_handler(stream_handler)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
-    logger.level = LogLevel.INFO
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
     return logger
