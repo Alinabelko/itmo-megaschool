@@ -4,17 +4,18 @@ from typing import Dict, Any
 from utils.logger import setup_logger
 from pydantic import BaseModel
 from .base import BaseAgent
-from ..schemas.models import LLMAnswer
+from schemas.models import LLMAnswer
 from langchain_core.messages import SystemMessage, HumanMessage
 
 logger = setup_logger()
 
 class SynthesizerAgent(BaseAgent):  
     
-    def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
         try:
             user_query = state["messages"][-1]["content"]
-            
+            logger.info(f"User query for synthesizer: {user_query}")
+
             system_prompt = """Ты - ассистент Университета ИТМО. Твоя задача - предоставлять точную информацию об университете. 
 
             Формат ответа:

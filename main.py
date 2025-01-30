@@ -57,10 +57,10 @@ llm = ChatOpenAI(
     temperature=settings.OPENAI_TEMPERATURE,
     model=settings.OPENAI_MODEL_NAME
 )
+search_agent = SearchAgent(llm)
 synthesizer_agent = SynthesizerAgent(llm)
 
-# Создание упрощенного рабочего процесса
-workflow = create_workflow(synthesizer_agent)
+workflow = create_workflow(synthesizer_agent, search_agent)
 
 @app.post("/api/request", response_model=PredictionResponse)
 async def predict(body: PredictionRequest):
@@ -76,7 +76,7 @@ async def predict(body: PredictionRequest):
             )
         }
         
-        final_state = workflow.invoke(initial_state)
+        final_state = await workflow.ainvoke(initial_state)
         
         logger.info(f"Final state: {final_state}")
         return PredictionResponse(
