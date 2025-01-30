@@ -7,7 +7,7 @@ from utils.logger import setup_logger
 from langchain_openai import ChatOpenAI
 from agents.search_agent import SearchAgent
 from agents.scraping_agent import ScrapingAgent
-from agents.synthesizer_agent import SynthesizerAgent
+from agents.synthesizer_agent import SynthesizerAgent, LLMAnswer
 from workflow import create_workflow
 from config import settings
 
@@ -65,28 +65,29 @@ workflow = create_workflow(synthesizer_agent)
 @app.post("/api/request", response_model=PredictionResponse)
 async def predict(body: PredictionRequest):
     try:
-        logger.info(f"Processing prediction request with id: {body.id}")
-        
         initial_state = {
             "messages": [{"role": "user", "content": body.query}],
             "current_step": "start",
             "scraping_results": [],
             "search_results": [],
-            "final_response": ""
+            "llm_answer": LLMAnswer(
+                answer=0,
+                reasoning=""
+            )
         }
         
         final_state = workflow.invoke(initial_state)
         
-        response = PredictionResponse(
+        logger.info(f"Final state: {final_state}")
+        return PredictionResponse(
             id=body.id,
-            answer=0,
-            reasoning=final_state["final_response"],
-            sources=[]  # пока нет источников
+            answer=final_state["llm_answer"].answer,
+            reasoning=final_state["llm_answer"].reasoning,
+            sources=[]
         )
         
-        logger.info(f"Successfully processed request {body.id}")
-        return response
-        
     except Exception as e:
-        logger.error(f"Internal error processing request {body.id}: {str(e)}")
+        logger.error(f"Internal error processing request {body.id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
+        
+    
