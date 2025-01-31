@@ -30,6 +30,8 @@ class SearchAgent(BaseAgent):
                 parts = search_results.split(", ")
                 current_result = {}
                 for part in parts:
+                    if len(formatted_results) >= 3:  # Проверяем количество результатов в начале цикла
+                        break
                     if ": " in part:
                         key, value = part.split(": ", 1)
                         if key in ["snippet", "title", "link"]:
@@ -41,6 +43,9 @@ class SearchAgent(BaseAgent):
                                     "snippet": current_result.get("snippet", "")
                                 })
                                 current_result = {}
+            
+            # Обрезаем результаты до 3, если каким-то образом получили больше
+            formatted_results = formatted_results[:3]
             
             logger.info(f"Formatted search results: {formatted_results}")
 
