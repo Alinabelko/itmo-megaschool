@@ -3,6 +3,8 @@ import trafilatura
 import httpx
 from urllib.parse import urlparse
 import asyncio
+from googleapiclient.discovery import build
+from config import settings
 
 from utils.logger import setup_logger
 from .base import BaseAgent
@@ -14,7 +16,10 @@ logger = setup_logger()
 class SearchAgent(BaseAgent):
     def __init__(self, llm):
         super().__init__(llm)
-        self.search_tool = DuckDuckGoSearchResults(max_results=3)
+        self.search_service = build(
+            "customsearch", "v1", 
+            developerKey=settings.GOOGLE_API_KEY
+        )
         self.http_client = httpx.AsyncClient(timeout=30.0)
 
     async def fetch_full_text(self, url: str) -> str:
@@ -37,6 +42,26 @@ class SearchAgent(BaseAgent):
             logger.error(f"Error fetching content from {url}: {e}")
             return ""
 
+    async def search_google(self, query: str) -> List[Dict]:
+        try:
+            results = self.search_service.cse().list(
+                q=query,
+                cx=settings.GOOGLE_CSE_ID,
+                num=3
+            ).execute()
+
+            search_results = []
+            for item in results.get('items', []):
+                search_results.append({
+                    'title': item.get('title', ''),
+                    'link': item.get('link', ''),
+                    'snippet': item.get('snippet', '')
+                })
+            return search_results
+        except Exception as e:
+            logger.error(f"Google search error: {e}")
+            return []
+
     async def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
         try:
             query = state["messages"][-1]["content"]
@@ -44,40 +69,24 @@ class SearchAgent(BaseAgent):
             
             logger.info(f"Searching with query: {formatted_query}")
             
-            search_results = await self.search_tool.ainvoke(formatted_query)
+            search_results = await self.search_google(formatted_query)
             logger.info(f"Raw search results: {search_results}")
             
-            # Парсим результаты поиска
-            urls_to_fetch = []
-            current_result = {}
-            if isinstance(search_results, str):
-                parts = search_results.split(", ")
-                for part in parts:
-                    if len(urls_to_fetch) >= 3:
-                        break
-                    if ": " in part:
-                        key, value = part.split(": ", 1)
-                        if key in ["snippet", "title", "link"]:
-                            current_result[key] = value.strip()
-                            if len(current_result) == 3:
-                                urls_to_fetch.append(current_result)
-                                current_result = {}
-
             # Параллельный скраппинг всех URL
             fetch_tasks = [
                 self.fetch_full_text(result["link"]) 
-                for result in urls_to_fetch
+                for result in search_results
             ]
             full_texts = await asyncio.gather(*fetch_tasks)
             
             # Формируем результаты
             formatted_results = [
                 {
-                    "title": result.get("title", ""),
-                    "url": result.get("link", ""),
+                    "title": result["title"],
+                    "url": result["link"],
                     "content": content
                 }
-                for result, content in zip(urls_to_fetch, full_texts)
+                for result, content in zip(search_results, full_texts)
                 if content  # Добавляем только если удалось получить текст
             ]
             
