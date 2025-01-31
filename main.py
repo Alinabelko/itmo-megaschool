@@ -83,7 +83,10 @@ async def predict(body: PredictionRequest):
             id=body.id,
             answer=final_state["llm_answer"].answer,
             reasoning=final_state["llm_answer"].reasoning,
-            sources=[]
+            sources=[
+                result.url
+                for result in final_state["search_results"]
+            ]
         )
         
     except Exception as e:
