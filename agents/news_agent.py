@@ -1,8 +1,11 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 import aiohttp
 from bs4 import BeautifulSoup
-from .base import BaseAgent
+
 from utils.logger import setup_logger
+
+from .base import BaseAgent
 
 logger = setup_logger()
 

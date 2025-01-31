@@ -1,5 +1,7 @@
+from typing import Any, Dict, List
+
 from pydantic import BaseModel
-from typing import List, Dict, Any
+
 
 class SearchResult(BaseModel):
     title: str

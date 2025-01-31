@@ -1,6 +1,8 @@
-from typing import Dict, Any
-from .base import BaseAgent
+from typing import Any, Dict
+
 from utils.logger import setup_logger
+
+from .base import BaseAgent
 
 logger = setup_logger()
 

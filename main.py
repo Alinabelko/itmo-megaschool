@@ -1,16 +1,18 @@
 import time
 from typing import List
+
 from fastapi import FastAPI, HTTPException, Request, Response
+from langchain_openai import ChatOpenAI
 from pydantic import HttpUrl
+
+from agents.news_agent import NewsAgent
+from agents.query_extractor_agent import QueryExtractorAgent
+from agents.search_agent import SearchAgent
+from agents.synthesizer_agent import LLMAnswer, SynthesizerAgent
+from config import settings
 from schemas.request import PredictionRequest, PredictionResponse
 from utils.logger import setup_logger
-from langchain_openai import ChatOpenAI
-from agents.search_agent import SearchAgent
-from agents.news_agent import NewsAgent
-from agents.synthesizer_agent import SynthesizerAgent, LLMAnswer
 from workflow import create_workflow
-from config import settings
-from agents.query_extractor_agent import QueryExtractorAgent
 
 app = FastAPI()
 logger = None

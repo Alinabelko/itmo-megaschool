@@ -1,15 +1,17 @@
-from typing import Dict, Any, List
-import trafilatura
-import httpx
-from urllib.parse import urlparse
 import asyncio
-from googleapiclient.discovery import build
-from config import settings
+from typing import Any, Dict, List
+from urllib.parse import urlparse
 
-from utils.logger import setup_logger
-from .base import BaseAgent
+import httpx
+import trafilatura
+from googleapiclient.discovery import build
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_core.messages import BaseMessage
+
+from config import settings
+from utils.logger import setup_logger
+
+from .base import BaseAgent
 
 logger = setup_logger()
 

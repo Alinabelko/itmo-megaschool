@@ -1,11 +1,13 @@
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
-from utils.logger import setup_logger
+from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel
-from .base import BaseAgent
+
 from schemas.models import LLMAnswer
-from langchain_core.messages import SystemMessage, HumanMessage
+from utils.logger import setup_logger
+
+from .base import BaseAgent
 
 logger = setup_logger()
 
