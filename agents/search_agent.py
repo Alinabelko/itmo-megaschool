@@ -2,6 +2,7 @@ from typing import Dict, Any, List
 import trafilatura
 import httpx
 from urllib.parse import urlparse
+import asyncio
 
 from utils.logger import setup_logger
 from .base import BaseAgent
@@ -39,7 +40,6 @@ class SearchAgent(BaseAgent):
     async def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
         try:
             query = state["messages"][-1]["content"]
-            # Добавляем ИТМО к запросу для получения релевантных результатов
             formatted_query = f"{query} ИТМО site:itmo.ru OR site:news.itmo.ru"
             
             logger.info(f"Searching with query: {formatted_query}")
@@ -48,30 +48,38 @@ class SearchAgent(BaseAgent):
             logger.info(f"Raw search results: {search_results}")
             
             # Парсим результаты поиска
-            formatted_results = []
+            urls_to_fetch = []
+            current_result = {}
             if isinstance(search_results, str):
                 parts = search_results.split(", ")
-                current_result = {}
                 for part in parts:
-                    if len(formatted_results) >= 3:
+                    if len(urls_to_fetch) >= 3:
                         break
                     if ": " in part:
                         key, value = part.split(": ", 1)
                         if key in ["snippet", "title", "link"]:
                             current_result[key] = value.strip()
                             if len(current_result) == 3:
-                                # Получаем полный текст для каждого результата
-                                full_text = await self.fetch_full_text(current_result["link"])
-                                if full_text:  # Добавляем только если удалось получить текст
-                                    formatted_results.append({
-                                        "title": current_result.get("title", ""),
-                                        "url": current_result.get("link", ""),
-                                        "content": full_text
-                                    })
+                                urls_to_fetch.append(current_result)
                                 current_result = {}
+
+            # Параллельный скраппинг всех URL
+            fetch_tasks = [
+                self.fetch_full_text(result["link"]) 
+                for result in urls_to_fetch
+            ]
+            full_texts = await asyncio.gather(*fetch_tasks)
             
-            # Обрезаем результаты до 3, если каким-то образом получили больше
-            formatted_results = formatted_results[:3]
+            # Формируем результаты
+            formatted_results = [
+                {
+                    "title": result.get("title", ""),
+                    "url": result.get("link", ""),
+                    "content": content
+                }
+                for result, content in zip(urls_to_fetch, full_texts)
+                if content  # Добавляем только если удалось получить текст
+            ]
             
             logger.info(f"Formatted search results: {formatted_results}")
 

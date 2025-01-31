@@ -6,6 +6,7 @@ from agents.search_agent import SearchAgent
 from agents.news_agent import NewsAgent
 from agents.query_extractor_agent import QueryExtractorAgent
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +25,20 @@ def create_workflow(
     
     async def search(state: AgentState) -> AgentState:
         state_dict = state.model_dump()
-        # Используем извлеченный поисковый запрос
         search_query_state = {
             **state_dict,
             "messages": [{"role": "user", "content": state_dict["search_query"]}]
         }
         
-        search_result = await search_agent.run(search_query_state)
-        news_result = await news_agent.run(search_query_state)
+        # Запускаем поиск параллельно
+        search_task = search_agent.run(search_query_state)
+        news_task = news_agent.run(search_query_state)
         
-        # Объединяем результаты поиска
+        # Ждем выполнения обоих запросов
+        search_result, news_result = await asyncio.gather(search_task, news_task)
+        
         combined_state = {
-            **state_dict,  # Сохраняем оригинальное состояние
+            **state_dict,
             "search_results": search_result["search_results"] + [
                 {
                     "title": news["title"],
