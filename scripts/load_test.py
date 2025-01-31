@@ -26,24 +26,45 @@ async def main():
     start_time = time.time()
     print(f"Начало тестирования: {datetime.now().strftime('%H:%M:%S')}")
     
-    # Настраиваем сессию с увеличенными таймаутами
     conn = aiohttp.TCPConnector(limit=20)  # ограничиваем количество одновременных соединений
     timeout = aiohttp.ClientTimeout(total=30)
     
     async with aiohttp.ClientSession(connector=conn, timeout=timeout) as session:
-        tasks = []
-        for i in range(100):
-            task = asyncio.create_task(make_request(session, i + 1))
-            tasks.append(task)
-            await asyncio.sleep(0.1)  # добавляем задержку 100мс между запросами
+        all_results = []
+        active_tasks = set()
+        request_id = 1
+        total_requests = 100  # общее количество запросов для отправки
         
-        results = await asyncio.gather(*tasks)
+        # Продолжаем, пока не обработаем все запросы
+        while len(all_results) < total_requests:
+            # Добавляем новые задачи, пока их меньше 20
+            while len(active_tasks) < 20 and request_id <= total_requests:
+                task = asyncio.create_task(make_request(session, request_id))
+                active_tasks.add(task)
+                request_id += 1
+            
+            # Ждем завершения любой задачи
+            done, pending = await asyncio.wait(
+                active_tasks,
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            # Обрабатываем завершенные задачи
+            for completed_task in done:
+                result = await completed_task
+                all_results.append(result)
+                active_tasks.remove(completed_task)
+            
+            # Выводим прогресс
+            print(f"\rОбработано запросов: {len(all_results)}/100, "
+                  f"Активных запросов: {len(active_tasks)}", end="")
     
+    print("\n")  # Новая строка после прогресс-бара
     end_time = time.time()
     duration = end_time - start_time
     
     # Анализ результатов
-    success_count = sum(1 for _, status in results if status == 200)
+    success_count = sum(1 for _, status in all_results if status == 200)
     
     print(f"\nЗавершено тестирование: {datetime.now().strftime('%H:%M:%S')}")
     print(f"Общее время выполнения: {duration:.2f} секунд ({duration/60:.2f} минут)")
@@ -52,7 +73,7 @@ async def main():
     # Вывод неуспешных запросов
     if success_count < 100:
         print("\nНеуспешные запросы:")
-        for req_id, status in results:
+        for req_id, status in all_results:
             if status != 200:
                 print(f"Запрос {req_id}: статус {status}")
 
