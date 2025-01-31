@@ -64,7 +64,7 @@ def create_workflow(
         
         if state_dict["messages"]:
             user_query = state_dict["messages"][-1]["content"]
-            state_dict["messages"][-1]["content"] = f"{user_query}\n\nКонтекст:\n{search_context}"
+            state_dict["messages"][-1]["content"] = f"{user_query}\n{search_context}"
         
         result = await synthesizer_agent.run(state_dict)
         return AgentState(**result)
