@@ -6,10 +6,11 @@ from schemas.request import PredictionRequest, PredictionResponse
 from utils.logger import setup_logger
 from langchain_openai import ChatOpenAI
 from agents.search_agent import SearchAgent
-from agents.scraping_agent import ScrapingAgent
+from agents.news_agent import NewsAgent
 from agents.synthesizer_agent import SynthesizerAgent, LLMAnswer
 from workflow import create_workflow
 from config import settings
+from agents.query_extractor_agent import QueryExtractorAgent
 
 app = FastAPI()
 logger = None
@@ -50,17 +51,30 @@ async def log_requests(request: Request, call_next):
         headers=dict(response.headers),
         media_type=response.media_type,
     )
-
-
+    
 llm = ChatOpenAI(
     api_key=settings.OPENAI_API_KEY,
     temperature=settings.OPENAI_TEMPERATURE,
     model=settings.OPENAI_MODEL_NAME
 )
+
+query_extractor_llm = ChatOpenAI(
+    api_key=settings.OPENAI_API_KEY,
+    temperature=settings.OPENAI_TEMPERATURE,
+    model=settings.QUERY_EXTRACTOR_MODEL_NAME
+)
+
 search_agent = SearchAgent(llm)
 synthesizer_agent = SynthesizerAgent(llm)
+news_agent = NewsAgent(llm)
+query_extractor_agent = QueryExtractorAgent(query_extractor_llm)
 
-workflow = create_workflow(synthesizer_agent, search_agent)
+workflow = create_workflow(
+    synthesizer_agent=synthesizer_agent,
+    search_agent=search_agent,
+    news_agent=news_agent,
+    query_extractor_agent=query_extractor_agent
+)
 
 @app.post("/api/request", response_model=PredictionResponse)
 async def predict(body: PredictionRequest):
@@ -84,7 +98,7 @@ async def predict(body: PredictionRequest):
             answer=final_state["llm_answer"].answer,
             reasoning=final_state["llm_answer"].reasoning,
             sources=[
-                result.url
+                result["url"]
                 for result in final_state["search_results"]
             ]
         )
@@ -93,4 +107,3 @@ async def predict(body: PredictionRequest):
         logger.error(f"Internal error processing request {body.id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
         
-    
