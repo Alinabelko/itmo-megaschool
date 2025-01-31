@@ -5,7 +5,7 @@ services:
     build: .
     container_name: fastapi-baseline
     ports:
-      - "8080:8080"
+      - "80:80"
     restart: unless-stopped
     environment:
       - TZ=UTC
