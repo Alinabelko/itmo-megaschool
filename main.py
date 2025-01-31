@@ -96,7 +96,7 @@ async def predict(body: PredictionRequest):
         return PredictionResponse(
             id=body.id,
             answer=final_state["llm_answer"].answer,
-            reasoning=final_state["llm_answer"].reasoning,
+            reasoning=f"{final_state['llm_answer'].reasoning}\n\n Ответ сгенерирован моделью gpt-4-turbo-preview",
             sources=[
                 result["url"]
                 for result in final_state["search_results"]
