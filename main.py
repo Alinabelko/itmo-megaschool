@@ -100,7 +100,7 @@ async def predict(body: PredictionRequest):
             sources=[
                 result["url"]
                 for result in final_state["search_results"]
-            ]
+            ][:3]
         )
         
     except Exception as e:
