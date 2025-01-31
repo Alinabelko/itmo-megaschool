@@ -13,6 +13,7 @@ class LLMAnswer(BaseModel):
 class AgentState(BaseModel):
     messages: List[Dict[str, str]]
     current_step: str
-    scraping_results: List[str] = []
-    search_results: List[SearchResult] = []
-    llm_answer: LLMAnswer | None = None 
+    search_query: str = ""
+    scraping_results: List[Dict[str, str]] = []
+    search_results: List[Dict[str, str]] = []
+    llm_answer: LLMAnswer 

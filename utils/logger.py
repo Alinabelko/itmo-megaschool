@@ -3,10 +3,15 @@ from logging.handlers import RotatingFileHandler
 import os
 
 def setup_logger():
+    logger = logging.getLogger('app_logger')
+    
+    # Проверяем, не был ли уже настроен логгер
+    if logger.handlers:
+        return logger
+        
     if not os.path.exists('logs'):
         os.makedirs('logs')
 
-    logger = logging.getLogger('app_logger')
     logger.setLevel(logging.INFO)
 
     formatter = logging.Formatter(
