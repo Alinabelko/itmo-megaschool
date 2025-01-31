@@ -7,7 +7,7 @@ class SearchResult(BaseModel):
     snippet: str
 
 class LLMAnswer(BaseModel):
-    answer: int
+    answer: int | None
     reasoning: str
 
 class AgentState(BaseModel):

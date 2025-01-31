@@ -20,11 +20,19 @@ class SynthesizerAgent(BaseAgent):
 
             Формат ответа:
             - Строго используй JSON с двумя полями: 
-            - `answer` (число): номер правильного варианта или 0, если ответ не найден
+            - `answer` (число или null): 
+                - номер правильного варианта (1-10)
+                - null, если вопрос не предполагает выбор из вариантов
             - `reasoning` (строка): подробное объяснение на русском языке
+
+            Структура вопроса:
+            - Текстовое описание
+            - Пронумерованные варианты ответов (1-10)
+            - Варианты разделены переносом строки
 
             Пример:
             {"answer": 2, "reasoning": "Поступить можно через личный кабинет..."}
+            {"answer": -1, "reasoning": "Вопрос не предполагает выбор из вариантов..."}
 
             Запрещено:
             - Добавлять текст вне JSON
@@ -43,8 +51,13 @@ class SynthesizerAgent(BaseAgent):
             try:
                 response_data = json.loads(response.content.strip())
                 logger.info(f"Parsed response data: {response_data}")
+                
+                # Обработка answer с учетом возможного None
+                answer_value = response_data.get("answer")
+                answer = int(answer_value) if answer_value is not None else None
+                
                 llm_answer = LLMAnswer(
-                    answer=int(response_data.get("answer", 0)),
+                    answer=answer,
                     reasoning=response_data.get("reasoning", "Объяснение отсутствует")
                 )
                 
